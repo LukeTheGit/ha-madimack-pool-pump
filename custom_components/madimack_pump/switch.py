@@ -1,14 +1,19 @@
-"""Switch platform for Fairland integration."""
+"""Switch platform for Madimack Pool Pump integration.
+
+The power switch maps to dpId 105 (bool). Implementation deferred to Phase E
+until the write payload shape is captured via MITM against the iGarden app —
+see DATAPOINT_MAP.md and TEST_PLAN.md §2.
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity import DeviceInfo
 
 from .api import FairlandApiClientCommunicationError, FairlandApiClientError
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, PUMP_CATEGORY_CODE
 from .entity import FairlandEntity
 
 if TYPE_CHECKING:
@@ -18,43 +23,20 @@ if TYPE_CHECKING:
     from .coordinator import FairlandDataUpdateCoordinator
     from .data import FairlandConfigEntry
 
-ENTITY_DESCRIPTIONS = (
-    SwitchEntityDescription(
-        key="Fairland",
-        name="Power",
-        icon="mdi:power",
-    ),
-)
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: FairlandConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Fairland switch platform."""
-    LOGGER.debug("Setting up Fairland switch platform")
-
-    entities = []
-    devices = entry.runtime_data.coordinator.data
-
-    # Create switch entities for each device
-    for device_info in devices:
-        # Prüfe, ob es sich um eine Wärmepumpe handelt
-        if device_info.get("categoryCode") == "heatPump":
-            LOGGER.debug("Found heat pump device: %s", device_info["deviceName"])
-            entities.append(
-                FairlandSwitch(
-                    coordinator=entry.runtime_data.coordinator,
-                    device_info=device_info,
-                    entity_description=ENTITY_DESCRIPTIONS,
-                )
-            )
-    async_add_entities(entities, True)
+    """Set up the Madimack pump switch platform."""
+    LOGGER.debug("Setting up Madimack pump switch platform (Phase B: no entities)")
+    # Phase E will populate this once dpId 105 write payload is confirmed.
+    async_add_entities([], True)
 
 
-class FairlandSwitch(FairlandEntity, SwitchEntity):
-    """Representation of a Fairland switch."""
+class MadimackPumpSwitch(FairlandEntity, SwitchEntity):
+    """Power switch for the Madimack pump (dpId 105). Wired in Phase E."""
 
     _attr_has_entity_name = True
 
@@ -62,12 +44,9 @@ class FairlandSwitch(FairlandEntity, SwitchEntity):
         self,
         coordinator: FairlandDataUpdateCoordinator,
         device_info: dict[str, Any],
-        entity_description: SwitchEntityDescription,
     ) -> None:
         """Initialize the switch class."""
         super().__init__(coordinator)
-        LOGGER.debug("Switch device info: %s", self._attr_device_info)
-        # self.entity_description = entity_description
 
         self._device_info = device_info
         self._device_id = device_info["id"]
@@ -77,26 +56,25 @@ class FairlandSwitch(FairlandEntity, SwitchEntity):
         self._attr_icon = "mdi:power"
         self._is_on = False
 
-        # Device info
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._device_id)},
             name=device_info["deviceName"],
-            manufacturer="Fairland",
+            manufacturer="Madimack",
             model=device_info.get("deviceName", "Unknown"),
             sw_version=device_info.get("version", "Unknown"),
         )
 
-        # Initialize the state from device info
         self._update_state()
 
     def _update_state(self):
         """Update state from device data."""
-        if "dps" in self._device_info:
-            for dp in self._device_info["dps"]:
-                if dp["dpId"] == "101":  # Power switch
-                    self._is_on = dp["dpValue"]
-                    self._attr_available = True
-                    return
+        if "dps" not in self._device_info:
+            return
+        for dp in self._device_info["dps"]:
+            if dp["dpId"] == "105":
+                self._is_on = bool(dp["dpValue"])
+                self._attr_available = True
+                return
 
     @property
     def is_on(self) -> bool:
@@ -106,7 +84,6 @@ class FairlandSwitch(FairlandEntity, SwitchEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        LOGGER.debug("Switch available: %s", self.coordinator.last_update_success)
         return self.coordinator.last_update_success
 
     async def async_added_to_hass(self) -> None:
@@ -117,7 +94,6 @@ class FairlandSwitch(FairlandEntity, SwitchEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        # Find our device in the coordinator data
         for device in self.coordinator.data:
             if device["id"] == self._device_id:
                 self._device_info = device
@@ -127,43 +103,32 @@ class FairlandSwitch(FairlandEntity, SwitchEntity):
 
     async def async_update(self) -> None:
         """Update the entity."""
-        # The coordinator handles the updates
         await self.coordinator.async_request_refresh()
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn the switch on."""
+        """Turn the pump on (Phase E: payload shape unconfirmed)."""
         try:
-            # await self.hass.async_add_executor_job(
-            #    self._api.set_device_status,
-            #    self._device_id,
-            #    "101",  # Power switch data point
-            #    True,
-            # )
             await self.coordinator.config_entry.runtime_data.client.set_device_status(
                 self._device_id,
-                "101",  # Power switch data point
+                "105",
                 True,
             )
             self._is_on = True
             self.async_write_ha_state()
-
-            # Request a refresh to get the updated state
             await self.coordinator.async_request_refresh()
         except (FairlandApiClientCommunicationError, FairlandApiClientError) as ex:
             LOGGER.error("Error turning on switch: %s", ex)
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn the switch off."""
+        """Turn the pump off (Phase E: payload shape unconfirmed)."""
         try:
             await self.coordinator.config_entry.runtime_data.client.set_device_status(
                 self._device_id,
-                "101",  # Power switch data point
+                "105",
                 False,
             )
             self._is_on = False
             self.async_write_ha_state()
-
-            # Request a refresh to get the updated state
             await self.coordinator.async_request_refresh()
         except (FairlandApiClientCommunicationError, FairlandApiClientError) as ex:
             LOGGER.error("Error turning off switch: %s", ex)

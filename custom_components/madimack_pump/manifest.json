@@ -1,0 +1,12 @@
+{
+  "domain": "madimack_pump",
+  "name": "Madimack Pool Pump (iGarden)",
+  "codeowners": [
+    "@lukedbeacon"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/lukedbeacon/ha-madimack-pool-pump",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/lukedbeacon/ha-madimack-pool-pump/issues",
+  "version": "0.3.0-dev"
+}

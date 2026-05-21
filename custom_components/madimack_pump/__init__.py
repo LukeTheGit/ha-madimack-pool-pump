@@ -1,7 +1,7 @@
-"""Custom integration to integrate Fairland with Home Assistant.
+"""Custom integration to integrate Madimack pool pumps with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/siedi/ha-fairland
+https://github.com/lukedbeacon/ha-madimack-pool-pump
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.loader import async_get_loaded_integration
 
-# from . import climate, sensor, switch
 from .api import (
     FairlandApiClient,
     FairlandApiClientCommunicationError,
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
 
 
 PLATFORMS: list[Platform] = [
-    Platform.CLIMATE,
     Platform.NUMBER,
     Platform.SENSOR,
     Platform.SWITCH,
@@ -50,7 +48,7 @@ async def async_setup_entry(
         username=config_entry.data[CONF_USERNAME],
         password=config_entry.data[CONF_PASSWORD],
         session=async_get_clientsession(hass),
-        country_code=config_entry.data.get("countryCode", "DE"),
+        country_code=config_entry.data.get("countryCode", "AU"),
     )
 
     config_entry.runtime_data = FairlandData(
