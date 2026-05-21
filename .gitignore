@@ -16,3 +16,8 @@ coverage.xml
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+
+# Secrets & device-specific captures
+.env
+discovery_output/
+probe_output/
