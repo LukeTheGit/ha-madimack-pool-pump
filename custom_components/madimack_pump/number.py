@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 
 from .api import FairlandApiClientCommunicationError, FairlandApiClientError
@@ -20,9 +21,29 @@ if TYPE_CHECKING:
     from .data import FairlandConfigEntry
 
 
-# Writable numeric data points. Empty until Phase F — speed setpoint (dpId 111)
-# and backwash duration (dpId 104) require write-payload capture before wiring.
-NUMBER_TYPES: dict[str, dict[str, Any]] = {}
+# Writable numeric data points. Ranges/steps are overridden from dpProperty
+# at runtime so the firmware's discovered limits always win.
+NUMBER_TYPES: dict[str, dict[str, Any]] = {
+    "111": {
+        "name": "Speed Setpoint",
+        "unit": PERCENTAGE,
+        "icon": "mdi:speedometer",
+        "min": 30.0,
+        "max": 100.0,
+        "step": 1.0,
+        "mode": NumberMode.SLIDER,
+    },
+    "104": {
+        "name": "Backwash Duration",
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer-sand",
+        "min": 0.0,
+        "max": 1440.0,
+        "step": 1.0,
+        "mode": NumberMode.BOX,
+        "entity_category": EntityCategory.CONFIG,
+    },
+}
 
 
 async def async_setup_entry(

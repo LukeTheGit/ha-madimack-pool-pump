@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfPower, UnitOfTime
+from homeassistant.const import UnitOfEnergy, UnitOfPower, UnitOfTime
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 
 from .const import DOMAIN, LOGGER, PUMP_CATEGORY_CODE
@@ -35,15 +35,8 @@ SENSOR_TYPES = {
         "state_class": SensorStateClass.MEASUREMENT,
     },
     # dpId 102 ("Real-time running rate") is defined in the cloud schema but
-    # never populated by this pump's firmware — even with the motor running at
-    # 100 % the value comes back as null. Speed-% telemetry uses dpId 111 below.
-    "111": {
-        "name": "Speed Setpoint",
-        "unit": PERCENTAGE,
-        "icon": "mdi:speedometer",
-        "device_class": None,
-        "state_class": SensorStateClass.MEASUREMENT,
-    },
+    # never populated by this pump's firmware — always null. Speed % is owned
+    # by the number entity for dpId 111 (Phase F).
     "108": {
         "name": "Backwash Countdown",
         "unit": UnitOfTime.MINUTES,

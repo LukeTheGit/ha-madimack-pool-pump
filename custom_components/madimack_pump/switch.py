@@ -1,8 +1,7 @@
 """Switch platform for Madimack Pool Pump integration.
 
-The power switch maps to dpId 105 (bool). Implementation deferred to Phase E
-until the write payload shape is captured via MITM against the iGarden app —
-see DATAPOINT_MAP.md and TEST_PLAN.md §2.
+The power switch maps to dpId 105 (bool). Probe confirmed the cloud accepts
+native Python ``True``/``False`` values (see probe_output/).
 """
 
 from __future__ import annotations
@@ -30,13 +29,27 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Madimack pump switch platform."""
-    LOGGER.debug("Setting up Madimack pump switch platform (Phase B: no entities)")
-    # Phase E will populate this once dpId 105 write payload is confirmed.
-    async_add_entities([], True)
+    LOGGER.debug("Setting up Madimack pump switch platform")
+
+    entities = []
+    for device_info in entry.runtime_data.coordinator.data:
+        if device_info.get("categoryCode") != PUMP_CATEGORY_CODE:
+            continue
+        if "dps" not in device_info:
+            continue
+        if not any(dp.get("dpId") == "105" for dp in device_info["dps"]):
+            continue
+        entities.append(
+            MadimackPumpSwitch(
+                coordinator=entry.runtime_data.coordinator,
+                device_info=device_info,
+            )
+        )
+    async_add_entities(entities, True)
 
 
 class MadimackPumpSwitch(FairlandEntity, SwitchEntity):
-    """Power switch for the Madimack pump (dpId 105). Wired in Phase E."""
+    """Power switch for the Madimack pump (dpId 105, native bool)."""
 
     _attr_has_entity_name = True
 
@@ -106,7 +119,7 @@ class MadimackPumpSwitch(FairlandEntity, SwitchEntity):
         await self.coordinator.async_request_refresh()
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn the pump on (Phase E: payload shape unconfirmed)."""
+        """Turn the pump on."""
         try:
             await self.coordinator.config_entry.runtime_data.client.set_device_status(
                 self._device_id,
@@ -120,7 +133,7 @@ class MadimackPumpSwitch(FairlandEntity, SwitchEntity):
             LOGGER.error("Error turning on switch: %s", ex)
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn the pump off (Phase E: payload shape unconfirmed)."""
+        """Turn the pump off."""
         try:
             await self.coordinator.config_entry.runtime_data.client.set_device_status(
                 self._device_id,

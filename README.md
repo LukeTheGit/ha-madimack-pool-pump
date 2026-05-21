@@ -21,10 +21,11 @@ This is an **in-progress rebuild** of the upstream heat-pump integration for pum
 | Capability                                 | Status |
 |-------------------------------------------|--------|
 | iGarden cloud auth + courtyard selection   | ✅ Works (reused from upstream). |
-| Read-only sensors (power W, running %, energy kWh, backwash countdown) | ✅ Phase C — wired. |
-| Power on/off switch (dpId 105)             | ⏳ Phase E — pending write-payload capture. |
-| Speed % setpoint (dpId 111, 30–100 %)      | ⏳ Phase F — pending write-payload capture. |
-| Manual Inverter vs Backwash mode select    | ⏳ Phase G — pending write-payload capture. |
+| Read-only sensors (power W, energy kWh, backwash countdown) | ✅ Phase C — wired. |
+| Power on/off switch (dpId 105)             | ✅ Phase E — wired. |
+| Speed % setpoint (dpId 111, 30–100 %)      | ✅ Phase F — wired (clamped). |
+| Backwash duration (dpId 104, 0–1440 min)   | ✅ Phase F — wired (config category). |
+| Manual Inverter / Backwash mode select     | ✅ Phase G — wired. |
 | Schedules / timers                          | ❌ Out of scope for v0.3. |
 
 See `DEVELOPMENT_PLAN.md`, `TEST_PLAN.md`, and `DATAPOINT_MAP.md` for the full plan and discovered data points.
@@ -51,18 +52,21 @@ See `DEVELOPMENT_PLAN.md`, `TEST_PLAN.md`, and `DATAPOINT_MAP.md` for the full p
 3. Enter your iGarden account credentials and country code (default `AU`).
 4. Pick the courtyard the pump is registered in.
 
-## Supported entities (current)
+## Supported entities
 
 The pump appears as a single device with these entities:
 
-| Entity                    | dpId | Type   | Notes |
-|---------------------------|------|--------|-------|
-| `sensor.…_current_power`  | 5    | W      | Live electrical draw. |
-| `sensor.…_speed_setpoint` | 111  | %      | Speed % the pump is currently set to (30–100). Will become a writable `number` in Phase F. |
-| `sensor.…_backwash_countdown` | 108 | min | Diagnostic; 0 outside backwash mode. |
-| `sensor.…_energy_consumption` | 109 | kWh | Cumulative; raw value scaled by 1/100. |
+| Entity                          | dpId | Kind   | Notes |
+|---------------------------------|------|--------|-------|
+| `sensor.…_current_power`        | 5    | W      | Live electrical draw. |
+| `sensor.…_energy_consumption`   | 109  | kWh    | Cumulative; raw value scaled by 1/100. Drop straight into the Energy dashboard. |
+| `sensor.…_backwash_countdown`   | 108  | min    | Diagnostic; 0 outside backwash mode. |
+| `switch.…_power`                | 105  | on/off | Native bool. |
+| `number.…_speed_setpoint`       | 111  | %      | Clamped 30–100, step 5. Manufacturer minimum-run protection. |
+| `number.…_backwash_duration`    | 104  | min    | Config category. Sets how long the backwash cycle runs when mode = Backwash. |
+| `select.…_mode`                 | 103  | enum   | "Manual Inverter" (normal running) / "Backwash" (triggers cycle for the duration above). |
 
-Write entities (switch, speed, mode) will appear in subsequent releases once write payloads are confirmed.
+> **Heads up:** selecting **Backwash** in the mode select starts an actual backwash cycle. Treat it as a deliberate user action.
 
 ## Energy dashboard
 
