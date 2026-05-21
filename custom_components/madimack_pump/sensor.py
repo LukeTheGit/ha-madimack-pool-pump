@@ -34,8 +34,11 @@ SENSOR_TYPES = {
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
     },
-    "102": {
-        "name": "Running Rate",
+    # dpId 102 ("Real-time running rate") is defined in the cloud schema but
+    # never populated by this pump's firmware — even with the motor running at
+    # 100 % the value comes back as null. Speed-% telemetry uses dpId 111 below.
+    "111": {
+        "name": "Speed Setpoint",
         "unit": PERCENTAGE,
         "icon": "mdi:speedometer",
         "device_class": None,

@@ -58,7 +58,7 @@ The pump appears as a single device with these entities:
 | Entity                    | dpId | Type   | Notes |
 |---------------------------|------|--------|-------|
 | `sensor.…_current_power`  | 5    | W      | Live electrical draw. |
-| `sensor.…_running_rate`   | 102  | %      | Real-time motor speed (null when pump is off). |
+| `sensor.…_speed_setpoint` | 111  | %      | Speed % the pump is currently set to (30–100). Will become a writable `number` in Phase F. |
 | `sensor.…_backwash_countdown` | 108 | min | Diagnostic; 0 outside backwash mode. |
 | `sensor.…_energy_consumption` | 109 | kWh | Cumulative; raw value scaled by 1/100. |
 
